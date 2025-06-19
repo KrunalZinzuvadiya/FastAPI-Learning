@@ -11,5 +11,8 @@
         "todosapp",
         "wrongpassowrd",
         "wrongpassword"
+    ],
+    "python.analysis.extraPaths": [
+        "./TodoApp/backend/app"
     ]
 }
