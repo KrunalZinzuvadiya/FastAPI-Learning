@@ -1,10 +1,10 @@
 from fastapi import FastAPI
-from core.database import Base
-from core.database import engine
-from api.v1 import admin
-from api.v1 import auth
-from api.v1 import todos
-from api.v1 import users
+from app.core.database import Base
+from app.core.database import engine
+from app.api.v1 import admin
+from app.api.v1 import auth
+from app.api.v1 import todos
+from app.api.v1 import users
 
 app = FastAPI()
 

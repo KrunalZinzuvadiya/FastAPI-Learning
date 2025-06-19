@@ -4,9 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session 
 from starlette import status
-from schemas.auth import CreateUserRequest, Token
-from core.database import SessionLocal
-from models.user import Users
+from app.schemas.auth import CreateUserRequest, Token
+from app.core.database import SessionLocal
+from app.models.user import Users
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from jose import jwt, JWTError

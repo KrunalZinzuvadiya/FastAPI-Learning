@@ -1,15 +1,17 @@
+import os
 from sqlalchemy import StaticPool, create_engine, text
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
-from ..app.core.database import Base
-from ..app.models.todo import Todos
-from ..app.models.user import Users
-from ..app.main import app
-from ..app.api.v1.auth import bcrypt_context
+from app.core.database import Base
+from app.models.todo import Todos
+from app.models.user import Users
+from app.main import app
+from app.api.v1.auth import bcrypt_context
 import pytest
 
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///../testdb.db"
+# Use an absolute path for the test database
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{os.path.join(os.path.dirname(__file__), '..', 'testdb.db')}"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
@@ -19,6 +21,7 @@ engine = create_engine(
 
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush = False, bind = engine)
 
+# Create all tables in the test database
 Base.metadata.create_all(bind=engine)
 
 def override_get_db():
@@ -30,8 +33,8 @@ def override_get_db():
 
 def override_get_current_user():
     return {
-        "username": "testuser",
-        "user_id": 1,
+        "username": "t",
+        "id": 1,
         "user_role": "admin"
     }
 

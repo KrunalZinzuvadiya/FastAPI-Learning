@@ -1,6 +1,6 @@
 from starlette import status
-from ..app.models.todo import Todos
-from ..app.api.v1.todos import get_db, GetCurrentUser
+from app.models.todo import Todos
+from app.api.v1.todos import get_db, GetCurrentUser
 from .utils import *
 
 app.dependency_overrides[get_db] = override_get_db

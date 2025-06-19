@@ -1,5 +1,5 @@
 from .utils import *
-from ..app.api.v1.auth import get_db, AuthenticateUser,CreateAccessToken, SECRET_KEY, ALGORITHM, GetCurrentUser
+from app.api.v1.auth import get_db, AuthenticateUser,CreateAccessToken, SECRET_KEY, ALGORITHM, GetCurrentUser
 from jose import jwt
 from datetime import timedelta
 from fastapi import HTTPException
@@ -36,11 +36,11 @@ def test_create_access_token():
 
 @pytest.mark.asyncio
 async def test_create_user_token():
-    encode = {'sub': 't', 'user_id': 1, 'role': 'admin'}
+    encode = {'sub': 't', 'id': 1, 'role': 'admin'}
     token = jwt.encode(encode, SECRET_KEY, ALGORITHM)
 
     user = await GetCurrentUser(token = token)
-    assert user == {'username': 't', 'user_id': 1, 'user_role':'admin'}
+    assert user == {'username': 't', 'id': 1, 'user_role':'admin'}
 
 @pytest.mark.asyncio
 async def test_get_current_user_missing_payload():

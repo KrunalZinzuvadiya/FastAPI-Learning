@@ -1,5 +1,5 @@
 from .utils import *
-from ..app.api.v1.users import get_db, GetCurrentUser
+from app.api.v1.users import get_db, GetCurrentUser
 from fastapi import status
 
 app.dependency_overrides[get_db] = override_get_db
