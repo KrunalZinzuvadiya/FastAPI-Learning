@@ -1,13 +1,15 @@
 {
     "cSpell.words": [
-        "Applicationdatabase",
         "autoflush",
+        "codingwith",
+        "excinfo",
+        "krunal",
         "phonenumber",
         "poolclass",
         "sessionmaker",
-        "sqlalchemy",
         "testdb",
         "todosapp",
-        "userole"
+        "wrongpassowrd",
+        "wrongpassword"
     ]
 }

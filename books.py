@@ -19,7 +19,7 @@ async def read_all_book():
 # path parameters is book_title
 @app.get("/books/my_book")
 async def read_my_book():
-    return {'book_title' : 'My favourite Book'}
+    return {'book_title' : 'My favorite Book'}
 
 #query parameter
 @app.get("/books/{book_author}/")
