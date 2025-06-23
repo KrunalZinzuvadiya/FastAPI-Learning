@@ -46,7 +46,7 @@ function initializeTodoApp() {
   setupAnimations();
   setupInputEnhancements();
   checkAuthentication();
-  checkUserRole();
+  //checkUserRole();
   checkAuthorizationStatus();
 }
 
@@ -64,9 +64,15 @@ function checkAuthorizationStatus() {
     const username = payload.sub;
 
     if (userRole === 'admin') {
-      showNotification(`Welcome, Admin ${username}! You have full access to all features.`, 'success');
+      showNotification(
+        `Welcome, Admin ${username}! You have full access to all features.`,
+        'success',
+      );
     } else {
-      showNotification(`Welcome, ${username}! You can manage your own todos.`, 'info');
+      showNotification(
+        `Welcome, ${username}! You can manage your own todos.`,
+        'info',
+      );
     }
   } catch (error) {
     console.error('Error checking authorization status:', error);
@@ -108,7 +114,10 @@ function isUserAdmin() {
 
 // Show unauthorized access message
 function showUnauthorizedMessage() {
-  showNotification('You are not authorized to access admin features. Admin privileges required.', 'error');
+  showNotification(
+    'You are not authorized to access admin features. Admin privileges required.',
+    'error',
+  );
 }
 
 // Check user role and show admin button if admin
@@ -128,18 +137,12 @@ function checkUserRole() {
     const userId = payload.id;
 
     const adminBtn = document.getElementById('adminBtn');
-    const adminQuickAccess = document.getElementById('adminQuickAccess');
     const floatingAdminBtn = document.getElementById('floatingAdminBtn');
 
     if (userRole === 'admin') {
       // Show main admin button
       if (adminBtn) {
         adminBtn.style.display = 'inline-flex';
-      }
-
-      // Show admin quick access section
-      if (adminQuickAccess) {
-        adminQuickAccess.style.display = 'block';
       }
 
       // Show floating admin button
@@ -154,12 +157,7 @@ function checkUserRole() {
       if (adminBtn) {
         adminBtn.style.display = 'inline-flex';
       }
-      
-      // Hide admin quick access section for non-admin users
-      if (adminQuickAccess) {
-        adminQuickAccess.style.display = 'none';
-      }
-      
+
       // Hide floating admin button for non-admin users
       if (floatingAdminBtn) {
         floatingAdminBtn.style.display = 'none';
@@ -174,11 +172,9 @@ function checkUserRole() {
 // Hide all admin buttons
 function hideAdminButtons() {
   const adminBtn = document.getElementById('adminBtn');
-  const adminQuickAccess = document.getElementById('adminQuickAccess');
   const floatingAdminBtn = document.getElementById('floatingAdminBtn');
 
   if (adminBtn) adminBtn.style.display = 'none';
-  if (adminQuickAccess) adminQuickAccess.style.display = 'none';
   if (floatingAdminBtn) floatingAdminBtn.style.display = 'none';
 }
 
@@ -189,16 +185,6 @@ function addAdminIndicator(username, userId) {
   if (header) {
     const adminBadge = document.createElement('div');
     adminBadge.className = 'mt-2';
-    adminBadge.innerHTML = `
-            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                <i class="bi bi-shield-check mr-1"></i>Admin: ${username} (ID: ${userId})
-            </span>
-            <div class="mt-1 text-xs text-white/70">
-                <span class="cursor-help" title="Keyboard Shortcuts: Ctrl+Shift+A (Admin Panel), Ctrl+Shift+L (Logout)">
-                    <i class="bi bi-keyboard mr-1"></i>Shortcuts available
-                </span>
-            </div>
-        `;
     header.appendChild(adminBadge);
   }
 }
@@ -232,7 +218,7 @@ function setupEventListeners() {
   // Admin button
   const adminBtn = document.getElementById('adminBtn');
   if (adminBtn) {
-    adminBtn.addEventListener('click', function(e) {
+    adminBtn.addEventListener('click', function (e) {
       if (!isUserAdmin()) {
         e.preventDefault(); // Prevent navigation
         showUnauthorizedMessage();
@@ -761,36 +747,7 @@ function updateStats() {
 
 // Add admin-specific statistics
 function addAdminStats() {
-  const token = localStorage.getItem('access_token');
-  if (!token) return;
-
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    const userRole = payload.role;
-    const userId = payload.id;
-
-    if (userRole === 'admin') {
-      // Add admin note to stats
-      const statsContainer = document.querySelector('.stats-container');
-      if (statsContainer && !document.getElementById('adminStatsNote')) {
-        const adminNote = document.createElement('div');
-        adminNote.id = 'adminStatsNote';
-        adminNote.className = 'col-span-full text-center mt-2';
-        adminNote.innerHTML = `
-                    <p class="text-white/80 text-sm">
-                        <i class="bi bi-info-circle mr-1"></i>
-                        Viewing todos for User ID: ${userId} | 
-                        <a href="/admin/admin-page" class="text-blue-300 hover:text-blue-200 underline">
-                            View All Users' Todos
-                        </a>
-                    </p>
-                `;
-        statsContainer.appendChild(adminNote);
-      }
-    }
-  } catch (error) {
-    console.error('Error adding admin stats:', error);
-  }
+  
 }
 
 // Handle priority change
