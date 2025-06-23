@@ -8,10 +8,13 @@ from app.models.user import Users
 from app.main import app
 from app.api.v1.auth import bcrypt_context
 import pytest
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 # Use an absolute path for the test database
-SQLALCHEMY_DATABASE_URL = f"sqlite:///{os.path.join(os.path.dirname(__file__), '..', 'testdb.db')}"
+SQLALCHEMY_DATABASE_URL = os.getenv(f"TESTDATABASE_URL")
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
@@ -78,4 +81,3 @@ def test_user():
     with engine.connect() as connection:
         connection.execute(text("DELETE FROM users;"))
         connection.commit()
-

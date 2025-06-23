@@ -1,12 +1,13 @@
 from .utils import *
 from app.api.v1.admin import get_db, GetCurrentUser
+from app.services.repositeries import TodoRepository
 from fastapi import status
 from app.models.todo import Todos
 
 app.dependency_overrides[get_db] = override_get_db
 app.dependency_overrides[GetCurrentUser] = override_get_current_user
 
-def test_admin_read_all_authenticated(test_todo: Todos):
+def test_admin_read_all_authenticated(test_todo):
     response = client.get("/admin/todo")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == [
@@ -22,8 +23,9 @@ def test_admin_delete_todo(test_todo: Todos):
     assert response.status_code == 204
 
     db = TestingSessionLocal()
-    model = db.query(Todos).filter(Todos.id == 1).first()
-    assert model is None
+    todo_repo = TodoRepository(db)
+    model = todo_repo.get_all()
+    assert len(model) == 0
 
 def test_admin_delete_todo_not_found():
     response = client.delete("/admin/todo/9999")

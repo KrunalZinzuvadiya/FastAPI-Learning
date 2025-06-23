@@ -1,26 +1,25 @@
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
-from sqlalchemy.orm import Session 
+from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy.orm import Session
 from starlette import status
+from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.templating import Jinja2Templates
+import os
+from fastapi.responses import RedirectResponse
 from app.schemas.auth import CreateUserRequest, Token
 from app.core.database import SessionLocal
-from app.models.user import Users
-from passlib.context import CryptContext
-from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
-from jose import jwt, JWTError
-
-router = APIRouter(
-     prefix='/auth',
-     tags = ['auth']
+from app.services.repositeries import AuthRepository
+from app.config.security import (
+    CreateAccessToken,
+    GetCurrentUser,
+    GetCurrentUserFromRequest,
 )
 
-SECRET_KEY = 'e7a6b0d1a405cacfbb7e9153a0d6195dc2b588b096bb4c4054d8a7bd5a543204' #openssl rand -hex 32
-ALGORITHM = 'HS256'
-
-bcrypt_context = CryptContext(schemes = ['bcrypt'], deprecated = 'auto')
-oauth2Bearer = OAuth2PasswordBearer(tokenUrl='auth/token')
+router = APIRouter(
+    prefix='/auth',
+    tags=['auth']
+)
 
 def get_db():
     db = SessionLocal()
@@ -31,70 +30,55 @@ def get_db():
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
-def AuthenticateUser(username: str, password: str, db):
-     user = db.query(Users).filter(Users.username == username).first()
-     if not user:
-          return False
-     if not bcrypt_context.verify(password, user.hashed_password):
-          return False
-     return user
+def get_auth_repo(db: db_dependency):
+    return AuthRepository(db)
 
-def CreateAccessToken(username: str, user_id: int, role: str, expire_delta: timedelta):
-     encode = {'sub': username, 'id': user_id, 'role': role}
-     expires = datetime.now(timezone.utc) + expire_delta
-     encode.update({'exp': expires})
-     return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
+auth_repo_dependency = Annotated[AuthRepository, Depends(get_auth_repo)]
 
+templates = Jinja2Templates(directory=os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "frontend", "templates")))
 
-async def GetCurrentUser(token: Annotated[str, Depends(oauth2Bearer)]):
-     try:
-          payload = jwt.decode(token, SECRET_KEY, algorithms=ALGORITHM)
-          username: str = payload.get('sub')
-          user_id: str = payload.get('id')
-          user_role: str = payload.get('role')
-          if username is None or user_id is None:
-               raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = 'Could not validate user.')
-          return {'username': username, 'id': user_id, 'user_role': user_role}
-     except JWTError:
-          raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = 'Could not validate user.')
+@router.get("/login-page")
+async def render_login_page(request: Request):
+    try:
+        user = await GetCurrentUserFromRequest(request)
+        if user:
+            return RedirectResponse(url="/todos/todo-page", status_code=302)
+    except Exception:
+        pass
+    return templates.TemplateResponse("login.html", {"request": request})
+
+@router.get("/register-page")
+def render_register_page(request: Request):
+    return templates.TemplateResponse("register.html", {"request": request})
+
+@router.get("/logout")
+def logout(request: Request):
+    response = RedirectResponse(url="/auth/login-page", status_code=302)
+    response.delete_cookie(key="access_token")
+    return response
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-async def create_user(db: db_dependency, 
-                      create_user_request: CreateUserRequest):
-        # Check if user with same email or username already exists
-        existing_user = db.query(Users).filter(
-            (Users.email == create_user_request.email) | 
-            (Users.username == create_user_request.username)
-        ).first()
-        
-        if existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email or username already registered"
-            )
-
-        create_user_model = Users(
-            email = create_user_request.email,
-            username = create_user_request.username,
-            first_name = create_user_request.first_name,
-            last_name = create_user_request.last_name,
-            role = create_user_request.role,
-            hashed_password = bcrypt_context.hash(create_user_request.password),
-            is_active = True,
-            phone_number = create_user_request.phone_number
+async def create_user(auth_repo: auth_repo_dependency, create_user_request: CreateUserRequest):
+    existing_user = auth_repo.get_user_by_email_or_username(
+        create_user_request.email, create_user_request.username
+    )
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email or username already registered"
         )
-
-        db.add(create_user_model)
-        db.commit()
-        db.refresh(create_user_model)
-        
-        return {"message": "User created successfully", "user_id": create_user_model.id}
+    
+    new_user = auth_repo.create_user(create_user_request)
+    return {"message": "User created successfully", "user_id": new_user.id}
 
 @router.post("/token", response_model=Token)
-async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-                                 db: db_dependency):
-     user = AuthenticateUser(form_data.username, form_data.password, db)
-     if not user:
-          raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = 'Could not validate user.')
-     token = CreateAccessToken(user.username, user.id, user.role,timedelta(minutes=20))
-     return {'access_token' : token, 'token_type': 'bearer'}
+async def login_for_access_token(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    auth_repo: auth_repo_dependency
+):
+    user = auth_repo.authenticate_user(form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Could not validate user.')
+    
+    token = CreateAccessToken(user.username, user.id, user.role, timedelta(minutes=20))
+    return {'access_token': token, 'token_type': 'bearer'}

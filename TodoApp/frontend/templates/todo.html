@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TodoApp - Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Custom Todo Styles -->
+    <link rel="stylesheet" href="/static/css/todo-styles.css">
+</head>
+<body class="font-poppins gradient-bg min-h-screen relative">
+    <!-- Floating Background Shapes -->
+    <div class="floating-shapes absolute inset-0 pointer-events-none">
+        <div class="absolute top-20 left-20 w-32 h-32 bg-white/10 rounded-full animate-float"></div>
+        <div class="absolute top-40 right-32 w-24 h-24 bg-white/10 rounded-full animate-float" style="animation-delay: 2s;"></div>
+        <div class="absolute bottom-32 left-32 w-20 h-20 bg-white/10 rounded-full animate-float" style="animation-delay: 4s;"></div>
+        <div class="absolute bottom-20 right-20 w-28 h-28 bg-white/10 rounded-full animate-float" style="animation-delay: 1s;"></div>
+    </div>
+
+    <!-- Floating Admin Button (for admin users) -->
+    <div id="floatingAdminBtn" class="fixed top-4 right-4 z-50" style="display: none;">
+        <button onclick="handleAdminNavigationWithCheck()" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-4 py-2 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110">
+            <i class="bi bi-shield-check text-lg"></i>
+        </button>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container min-h-screen flex items-center justify-center p-2 relative z-10">
+        <div class="w-full max-w-4xl">
+            <!-- Header Section -->
+            <div class="text-center mb-6 animate__animated animate__fadeInDown">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-full mb-3 animate-pulse-slow">
+                    <i class="bi bi-check-circle text-3xl text-white"></i>
+                </div>
+                <h1 class="text-3xl md:text-4xl font-bold text-white mb-1">Todo Dashboard</h1>
+                <p class="text-white/80 text-base">Manage your tasks efficiently</p>
+                
+                <!-- Navigation Buttons -->
+                <div class="mt-4 flex justify-center gap-4">
+                    <a href="/admin/admin-page" id="adminBtn" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg inline-block">
+                        <i class="bi bi-shield-check mr-2"></i>Admin Panel
+                    </a>
+
+                    <button id="logoutBtn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors duration-300">
+                        <i class="bi bi-box-arrow-right mr-2"></i>Logout
+                    </button>
+                </div>
+                
+                <!-- Admin Quick Access (for admin users) -->
+                <div id="adminQuickAccess" class="mt-3" style="display: none;">
+                    <div class="bg-blue-500/20 backdrop-blur-sm rounded-lg p-3 border border-blue-300/30">
+                        <p class="text-white/90 text-sm mb-2">
+                            <i class="bi bi-shield-check mr-1"></i>
+                            <strong>Admin Access:</strong> Quick navigation to admin features
+                        </p>
+                        <div class="flex gap-2 justify-center">
+                            <button onclick="handleAdminNavigationWithCheck()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                                <i class="bi bi-people mr-1"></i>View All Users
+                            </button>
+                            <button onclick="handleAdminNavigationWithCheck()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                                <i class="bi bi-gear mr-1"></i>Admin Dashboard
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-container mb-6 animate__animated animate__fadeInUp">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalTodos">0</div>
+                    <div class="stat-label">Total Tasks</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="completedTodos">0</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="pendingTodos">0</div>
+                    <div class="stat-label">Pending</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="highPriorityTodos">0</div>
+                    <div class="stat-label">High Priority</div>
+                </div>
+            </div>
+
+            <!-- Todo Form Card -->
+            <div class="glass-effect rounded-2xl p-4 md:p-6 shadow-2xl animate__animated animate__fadeInUp mb-6">
+                <form id="todoform" method="POST" action="/todos" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Task Field -->
+                        <div>
+                            <label for="task" class="flex items-center text-white font-medium text-sm mb-2">
+                                <i class="bi bi-list-task mr-1 text-purple-300"></i>
+                                Task Title
+                            </label>
+                            <input type="text" id="task" name="task"
+                                   class="w-full px-4 py-3 bg-white/90 rounded-xl border-0 text-gray-800 placeholder-gray-500
+                                          focus:outline-none focus:ring-2 focus:ring-purple-400 input-focus transition-all duration-300 text-sm"
+                                   placeholder="Enter task title" required>
+                        </div>
+                        
+                        <!-- Priority Field -->
+                        <div>
+                            <label for="priority" class="flex items-center text-white font-medium text-sm mb-2">
+                                <i class="bi bi-flag mr-1 text-purple-300"></i>
+                                Priority
+                            </label>
+                            <select id="priority" name="priority"
+                                    class="w-full px-4 py-3 bg-white/90 rounded-xl border-0 text-gray-800
+                                           focus:outline-none focus:ring-2 focus:ring-purple-400 input-focus transition-all duration-300 text-sm">
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                                <option value="very_high">Very High</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Description Field -->
+                    <div>
+                        <label for="description" class="flex items-center text-white font-medium text-sm mb-2">
+                            <i class="bi bi-text-paragraph mr-1 text-purple-300"></i>
+                            Description (Optional)
+                        </label>
+                        <textarea id="description" name="description"
+                                  class="w-full px-4 py-3 bg-white/90 rounded-xl border-0 text-gray-800 placeholder-gray-500
+                                         focus:outline-none focus:ring-2 focus:ring-purple-400 input-focus transition-all duration-300 text-sm resize-none"
+                                  rows="3" placeholder="Enter task description (optional)"></textarea>
+                    </div>
+                    
+                    <!-- Submit and Cancel Buttons -->
+                    <div class="flex gap-3">
+                        <button type="submit"
+                                class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-3 px-6 
+                                       rounded-xl text-base shadow-lg btn-hover transition-all duration-300 transform hover:scale-105">
+                            <i class="bi bi-plus-circle mr-2"></i>Add Task
+                        </button>
+                        <button type="button" id="cancelEditBtn"
+                                class="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white font-semibold 
+                                       rounded-xl text-base shadow-lg transition-all duration-300 transform hover:scale-105"
+                                style="display: none;">
+                            <i class="bi bi-x-circle mr-2"></i>Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Search and Filter Section -->
+            <div class="glass-effect rounded-2xl p-4 md:p-6 shadow-2xl animate__animated animate__fadeInUp mb-6">
+                <!-- Search Bar -->
+                <div class="search-container">
+                    <i class="bi bi-search search-icon"></i>
+                    <input type="text" id="searchInput" class="search-input" placeholder="Search tasks...">
+                </div>
+                
+                <!-- Filter Buttons -->
+                <div class="filter-container">
+                    <button class="filter-btn active" data-filter="all">All Tasks</button>
+                    <button class="filter-btn" data-filter="pending">Pending</button>
+                    <button class="filter-btn" data-filter="completed">Completed</button>
+                    <button class="filter-btn" data-filter="urgent">Urgent</button>
+                    <button class="filter-btn" data-filter="very_high">Very High</button>
+                    <button class="filter-btn" data-filter="high">High Priority</button>
+                    <button class="filter-btn" data-filter="medium">Medium Priority</button>
+                    <button class="filter-btn" data-filter="low">Low Priority</button>
+                </div>
+            </div>
+
+            <!-- Todo List Card -->
+            <div class="glass-effect rounded-2xl p-4 md:p-6 shadow-2xl animate__animated animate__fadeInUp">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-white">Your Tasks</h2>
+                    <div id="loadingSpinner" class="loading-spinner" style="display: none;"></div>
+                </div>
+                
+                <!-- Todo List -->
+                <div id="todoList" class="todo-list">
+                    <!-- Todo items will be dynamically added here -->
+                </div>
+                
+                <!-- Empty State -->
+                <div id="emptyState" class="empty-state" style="display: none;">
+                    <i class="bi bi-inbox"></i>
+                    <h3 class="text-lg font-semibold mb-2">No tasks found</h3>
+                    <p class="text-sm">Start by adding your first task above!</p>
+                </div>
+            </div>
+
+            <!-- Footer Section -->
+            <div class="text-center mt-6 text-white/80">
+                <p class="text-sm">Powered by <a href="#" class="text-purple-400 hover:underline">TodoApp</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Todo Scripts -->
+    <script src="/static/js/todo-scripts.js"></script>
+</body>
+</html>

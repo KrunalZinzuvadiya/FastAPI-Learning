@@ -1,18 +1,15 @@
-from fastapi import APIRouter
-from fastapi import Depends, HTTPException, Path
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from app.core.database import SessionLocal
 from sqlalchemy.orm import Session
 from typing import Annotated
-from app.models.todo import Todos
-from app.models.user import Users
 from starlette import status
-from app.api.v1.auth import GetCurrentUser
-from passlib.context import CryptContext
+from app.core.database import SessionLocal
+from app.config.security import GetCurrentUser
+from app.services.repositeries import UserRepository
 
 router = APIRouter(
     prefix='/user',
-     tags = ['user']
+    tags=['user']
 )
 
 def get_db():
@@ -25,37 +22,50 @@ def get_db():
 db_dependency = Annotated[Session, Depends(get_db)]
 user_dependency = Annotated[dict, Depends(GetCurrentUser)]
 
-bcrypt_context = CryptContext(schemes = ['bcrypt'], deprecated = 'auto')
+def get_user_repo(db: db_dependency):
+    return UserRepository(db)
+
+user_repo_dependency = Annotated[UserRepository, Depends(get_user_repo)]
 
 class UserVerification(BaseModel):
     password: str
     new_password: str = Field(min_length=6)
 
 @router.get("/", status_code=status.HTTP_200_OK)
-async def read_all(user: user_dependency, db:db_dependency):
+async def get_user(user: user_dependency, user_repo: user_repo_dependency):
     if user is None:
-        raise HTTPException(status_code=401, detail = 'Authentication Failed')
-    return db.query(Users).filter(Users.id == user.get('id')).first()
+        raise HTTPException(status_code=401, detail='Authentication Failed')
+    
+    current_user = user_repo.get_user_by_id(user.get('id'))
+    if not current_user:
+        raise HTTPException(status_code=404, detail='User not found')
+    return current_user
 
 @router.put("/password", status_code=status.HTTP_204_NO_CONTENT)
-async def ChangePassword(user: user_dependency, db: db_dependency,
-                         user_verification: UserVerification):
+async def change_password(
+    user: user_dependency, 
+    user_repo: user_repo_dependency,
+    user_verification: UserVerification
+):
     if user is None:
-        raise HTTPException(status_code=401, detail = 'Authentication Failed')
-    user_model = db.query(Users).filter(Users.id == user.get('id')).first()
-
-    if not bcrypt_context.verify(user_verification.password, user_model.hashed_password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = 'User is not identified')
-    user_model.hashed_password = bcrypt_context.hash(user_verification.new_password)
-    db.add(user_model)
-    db.commit()
+        raise HTTPException(status_code=401, detail='Authentication Failed')
+    
+    success = user_repo.change_password(
+        user.get('id'), 
+        user_verification.password,
+        user_verification.new_password
+    )
+    if not success:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='User is not identified')
+    return None
 
 @router.put("/phonenumber/{phone_number}", status_code=status.HTTP_204_NO_CONTENT)
-async def UpdatePhoneNumber(user: user_dependency, db: db_dependency, phone_number: str):
+async def update_phone_number(user: user_dependency, user_repo: user_repo_dependency, phone_number: str):
     if user is None:
-        raise HTTPException(status_code=401, detail = 'Authentication Failed')
-    user_model = db.query(Users).filter(Users.id == user.get('id')).first()
-    user_model.phone_number = phone_number    
-    db.add(user_model)
-    db.commit()
+        raise HTTPException(status_code=401, detail='Authentication Failed')
+        
+    success = user_repo.update_user_phone(user.get('id'), phone_number)
+    if not success:
+        raise HTTPException(status_code=404, detail='User not found')
+    return None
 
