@@ -6,7 +6,7 @@ from app.core.database import Base
 from app.models.todo import Todos
 from app.models.user import Users
 from app.main import app
-from app.api.v1.auth import bcrypt_context
+from app.config.security import bcrypt_context
 import pytest
 from dotenv import load_dotenv
 
@@ -14,7 +14,7 @@ load_dotenv()
 
 
 # Use an absolute path for the test database
-SQLALCHEMY_DATABASE_URL = os.getenv(f"TESTDATABASE_URL")
+SQLALCHEMY_DATABASE_URL = os.getenv("TESTDATABASE_URL")
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
